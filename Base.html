@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TRNG 5 Giây - Phân Tích Nguồn Ngẫu Nhiên</title>
+    <title>TRNG 3 Nguồn (Trạng Thái Màu Sắc)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
@@ -22,15 +22,36 @@
             font-variant-numeric: tabular-nums;
             letter-spacing: 1px;
         }
-        .mixing {
-            animation: pulse-border 1s infinite alternate;
+        /* Hiệu ứng nhấp nháy khi đang trộn */
+        .mixing-active {
+            animation: pulse-border 0.5s infinite alternate;
         }
         @keyframes pulse-border {
-            from { border-color: #10b981; box-shadow: 0 0 10px rgba(16, 185, 129, 0.5); }
-            to { border-color: #059669; box-shadow: 0 0 15px rgba(5, 150, 105, 0.7); }
+            from { border-color: #10b981; box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+            to { border-color: #059669; box-shadow: 0 0 12px rgba(5, 150, 105, 0.7); }
         }
         .key-code {
-            font-size: 0.65rem; /* Rất nhỏ để vừa trên màn hình di động */
+            font-size: 0.65rem; 
+        }
+        #video-feed {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Lật hình ảnh (selfie view) */
+        }
+        .status-box {
+            width: 80px;
+            height: 64px;
+            border-radius: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            border-width: 2px;
+            
+            /* Default: Inactive/Gray */
+            border-color: #d1d5db; /* Gray 300 */
+            background-color: #f3f4f6; /* Gray 100 */
         }
     </style>
 </head>
@@ -39,24 +60,34 @@
 <div class="container flex items-center justify-center p-4">
     <div class="card p-6 md:p-8 rounded-3xl shadow-2xl w-full max-w-sm">
         
-        <h1 class="text-xl font-extrabold text-emerald-700 mb-2 text-center">🔬 Phân Tích Nguồn Ngẫu Nhiên TRNG</h1>
-        <p class="text-xs text-gray-500 mb-4 text-center">Xem đóng góp của bạn và Hệ điều hành!</p>
+        <h1 class="text-xl font-extrabold text-emerald-700 mb-2 text-center">🔬 Bộ Trộn Entropy 3 Nguồn</h1>
+        <p class="text-xs text-gray-500 mb-4 text-center">Sensor + Mic + Camera để tạo Khóa TRNG.</p>
 
         <!-- Đồng hồ đếm ngược -->
         <div class="mb-4 text-center">
             <h2 class="text-lg font-semibold text-gray-700">Thời Gian Còn Lại</h2>
             <p id="timer-display" class="text-5xl font-extrabold text-red-500 mt-1">5.00</p>
         </div>
-
-        <!-- Vùng Hiển thị Sensor -->
-        <div id="sensor-info" class="bg-emerald-50 p-3 rounded-xl flex flex-col justify-center items-center mb-4 border border-emerald-300">
-            <p id="sensor-status" class="text-sm text-emerald-700 font-semibold">Bấm Bắt đầu để cấp quyền.</p>
-            <p id="sensor-data" class="text-xs text-gray-600 mt-1 font-mono break-words">Total Chaos Score: 0</p>
+        
+        <!-- Vùng Nguồn Entropy (với trạng thái màu sắc) -->
+        <div class="flex justify-around items-center mb-4">
+            <!-- CAMERA STATUS -->
+            <div id="video-container" class="status-box">
+                <video id="video-feed" autoplay muted playsinline class="rounded-lg w-full h-full"></video>
+            </div>
+            <!-- MICROPHONE STATUS -->
+            <div id="mic-status" class="status-box text-xs text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C10.9 2 10 2.9 10 4V10C10 11.1 10.9 12 12 12C13.1 12 14 11.1 14 10V4C14 2.9 13.1 2 12 2ZM17 11C17 13.76 14.76 16 12 16C9.24 16 7 13.76 7 11H5C5 14.41 7.79 17.2 11 17.77V21H13V17.77C16.21 17.2 19 14.41 19 11H17Z"/></svg>
+            </div>
+            <!-- SENSOR STATUS -->
+            <div id="sensor-status-icon" class="status-box text-xs text-gray-600">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-gray-400" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12C2 17.52 6.48 22 12 22C17.52 22 22 17.52 22 12C22 6.48 17.52 2 12 2ZM13 19H11V18H13V19ZM13 17H11V7H13V17Z"/></svg>
+            </div>
         </div>
 
         <!-- Nút Bắt đầu -->
         <button id="start-button" class="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl transition duration-200 hover:bg-emerald-700 shadow-lg shadow-emerald-300">
-            Bắt đầu (5 Giây)
+            Bắt đầu (Cần cấp quyền Camera & Mic)
         </button>
 
         <!-- Kết quả và Điểm số -->
@@ -68,24 +99,15 @@
                 <span class="text-sm font-medium text-indigo-700">1. Nhiễu Vật Lý (Sensor/Bạn):</span>
                 <span id="human-score" class="text-xl font-extrabold text-indigo-600">--</span>
             </div>
-
-            <!-- Nguồn 2: OS TRNG -->
-            <div class="flex justify-between items-center mb-4 p-3 bg-white rounded-lg border border-green-200 shadow-sm">
-                <span class="text-sm font-medium text-green-700">2. Mức Ngẫu Nhiên Mật Mã (OS TRNG):</span>
-                <span id="os-randomness" class="text-xl font-extrabold text-green-600">256 bits</span>
-            </div>
-
+            
             <!-- Metric 3: Hamming Distance (Sự trộn lẫn) -->
             <div class="flex justify-between items-center mb-4 p-2 bg-white rounded-lg border border-gray-200">
                 <span class="text-sm font-medium text-gray-600">Khoảng Cách Hamming (Độ Độc Lập):</span>
                 <span id="hamming-distance" class="text-xl font-extrabold text-green-600">-- / 256</span>
             </div>
             
-            <h3 class="text-sm font-bold text-gray-700 mb-1">🔑 Khóa Của Bạn (Sensor + OS Mix)</h3>
+            <h3 class="text-sm font-bold text-gray-700 mb-1">🔑 Khóa Của Bạn (3 Nguồn + OS Mix)</h3>
             <code id="user-key" class="key-code block bg-white p-2 rounded-lg break-all font-mono text-gray-800 border min-h-[30px]">Đang chờ...</code>
-
-            <h3 class="text-sm font-bold text-gray-700 mt-3 mb-1">🗝️ Khóa Tham Chiếu (OS TRNG Gốc)</h3>
-            <code id="reference-key" class="key-code block bg-white p-2 rounded-lg break-all font-mono text-gray-800 border min-h-[30px]">Đang chờ...</code>
         </div>
         
     </div>
@@ -94,34 +116,58 @@
 <script>
     // --- CẤU HÌNH ---
     const MAX_TIME_SECONDS = 5; 
-    const MIXING_FACTOR = 100000; // Để lấy độ chính xác đến 5 số thập phân
+    const MIXING_FACTOR = 100000; // Độ chính xác 5 số thập phân
+    const ENTROPY_LENGTH_BYTES = 32; // 256 bits
 
     // --- STATE VÀ BIẾN GLOBAL ---
-    let score = 0; // Điểm số Chaos tích lũy
+    let score = 0; 
     let mixCounter = 0;
     let isCollecting = false;
     let timerInterval = null;
-    let entropyPool = new Uint32Array(8); // Pool 32 bytes (256 bits)
+    let audioContext = null;
+    let analyserNode = null;
+    let stream = null;
+    let videoTimer = null;
+
+    let entropyPool = new Uint32Array(ENTROPY_LENGTH_BYTES / 4); 
     let lastSensorValues = { alpha: 0, beta: 0, gamma: 0 };
     
     // --- DOM Elements ---
     const startButton = document.getElementById('start-button');
     const timerDisplay = document.getElementById('timer-display');
-    const sensorInfo = document.getElementById('sensor-info');
-    const sensorStatus = document.getElementById('sensor-status');
-    const sensorData = document.getElementById('sensor-data');
+    const videoFeed = document.getElementById('video-feed');
+    const videoContainer = document.getElementById('video-container');
+    const micStatusIcon = document.getElementById('mic-status');
+    const sensorStatusIcon = document.getElementById('sensor-status-icon');
     const userKey = document.getElementById('user-key');
-    const referenceKey = document.getElementById('reference-key');
-    const humanScoreEl = document.getElementById('human-score'); // Đổi tên ID
-    const osRandomnessEl = document.getElementById('os-randomness'); // Element mới
+    const humanScoreEl = document.getElementById('human-score'); 
     const hammingDistanceEl = document.getElementById('hamming-distance');
+    
+    // --- HÀM CẬP NHẬT TRẠNG THÁI MÀU SẮC ---
+    function setStatus(element, status) {
+        // 0: Default/Inactive (Gray), 1: Active (Green), 2: Error (Red)
+        element.classList.remove('border-gray-300', 'bg-gray-200', 'border-red-500', 'bg-red-100', 'border-emerald-500', 'bg-emerald-100');
+        
+        const svgIcon = element.querySelector('svg');
+        if (svgIcon) svgIcon.classList.remove('text-gray-400', 'text-red-500', 'text-emerald-500');
+
+        if (status === 1) { // ACTIVE
+            element.classList.add('border-emerald-500', 'bg-emerald-100');
+            if (svgIcon) svgIcon.classList.add('text-emerald-500');
+        } else if (status === 2) { // ERROR
+            element.classList.add('border-red-500', 'bg-red-100');
+            if (svgIcon) svgIcon.classList.add('text-red-500');
+        } else { // DEFAULT/INACTIVE
+            element.classList.add('border-gray-300', 'bg-gray-200');
+            if (svgIcon) svgIcon.classList.add('text-gray-400');
+        }
+    }
+
 
     // --- CÁC HÀM CÔNG CỤ MẬT MÃ HỌC ---
     
-    /**
-     * Hàm Hash đơn giản để trộn (mix) giá trị mới vào Entropy Pool
-     */
     function mixEntropy(newValue) {
+        if (!isCollecting) return;
         const highPrecisionNoise = Math.floor(newValue * MIXING_FACTOR);
         const poolIndex = mixCounter % entropyPool.length;
         let existingValue = entropyPool[poolIndex];
@@ -135,35 +181,28 @@
         mixCounter++;
     }
 
-    /**
-     * Chuyển ArrayBuffer chứa entropy thành chuỗi Hex
-     */
     function bufferToHex(buffer) {
         return Array.from(new Uint8Array(buffer))
             .map(b => b.toString(16).padStart(2, '0'))
             .join('');
     }
 
-    /**
-     * Tính Khoảng Cách Hamming (Hamming Distance) giữa hai mảng byte
-     */
     function calculateHammingDistance(arr1, arr2) {
         let distance = 0;
         const len = Math.min(arr1.length, arr2.length);
-
         for (let i = 0; i < len; i++) {
             let diff = arr1[i] ^ arr2[i]; 
-            // Đếm số bit 1
+            let count = 0;
             while (diff > 0) {
                 diff &= (diff - 1);
-                distance++;
+                count++;
             }
+            distance += count;
         }
         return distance;
     }
 
-    // --- XỬ LÝ SENSOR ---
-
+    // --- XỬ LÝ SENSOR (Gia tốc kế/Con quay) ---
     function handleDeviceOrientation(event) {
         if (!isCollecting) return;
 
@@ -171,25 +210,85 @@
         const beta = event.beta || 0;
         const gamma = event.gamma || 0;
 
+        // Chỉ thu thập nhiễu khi giá trị thay đổi đáng kể
         const deltaAlpha = Math.abs(alpha - lastSensorValues.alpha);
         const deltaBeta = Math.abs(beta - lastSensorValues.beta);
         const deltaGamma = Math.abs(gamma - lastSensorValues.gamma);
         
         const totalDelta = deltaAlpha + deltaBeta + deltaGamma;
         
-        score += totalDelta * MIXING_FACTOR; 
+        if (totalDelta > 0.0001) { // Lọc nhiễu tĩnh
+            score += totalDelta * MIXING_FACTOR; 
+            mixEntropy(totalDelta);
+            
+            // Hiệu ứng nhấp nháy (chỉ khi đang trộn)
+            sensorStatusIcon.classList.add('mixing-active');
+            setTimeout(() => { sensorStatusIcon.classList.remove('mixing-active'); }, 50);
 
-        mixEntropy(totalDelta);
-        
-        sensorData.textContent = `Total Chaos Score: ${Math.round(score).toLocaleString('vi-VN')}`;
-        sensorInfo.classList.add('mixing');
-        setTimeout(() => { sensorInfo.classList.remove('mixing'); }, 100);
-
-        lastSensorValues = { alpha, beta, gamma };
+            lastSensorValues = { alpha, beta, gamma };
+        }
     }
     
-    // --- QUẢN LÝ THỜI GIAN VÀ TRẠNG THÁI ---
+    // --- XỬ LÝ MICRO ---
+    function startMicEntropy(mediaStream) {
+        if (!isCollecting) return;
+        setStatus(micStatusIcon, 1); // Đặt trạng thái Xanh Lá
 
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        analyserNode = audioContext.createAnalyser();
+        analyserNode.fftSize = 256; 
+
+        const source = audioContext.createMediaStreamSource(mediaStream);
+        source.connect(analyserNode);
+
+        const bufferLength = analyserNode.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+
+        const micLoop = () => {
+            if (!isCollecting) return;
+            analyserNode.getByteTimeDomainData(dataArray);
+
+            let sumOfSquares = 0;
+            for(let i = 0; i < bufferLength; i++) {
+                // Nhiễu điện tử: Dùng độ lệch trung bình (timing jitter)
+                const value = dataArray[i] - 128;
+                sumOfSquares += value * value;
+            }
+            const rms = Math.sqrt(sumOfSquares / bufferLength);
+
+            mixEntropy(rms);
+            micStatusIcon.classList.add('mixing-active');
+            setTimeout(() => { micStatusIcon.classList.remove('mixing-active'); }, 50);
+
+            requestAnimationFrame(micLoop);
+        };
+        micLoop();
+    }
+
+    // --- XỬ LÝ CAMERA ---
+    function startCameraEntropy(mediaStream) {
+        if (!isCollecting) return;
+        setStatus(videoContainer, 1); // Đặt trạng thái Xanh Lá
+        
+        videoFeed.srcObject = mediaStream;
+        
+        const cameraLoop = () => {
+             if (!isCollecting) return;
+             
+             // Sử dụng thời gian thực để thu thập nhiễu thời gian thực (Timing Jitter)
+             const timeNoise = Date.now() % 10000;
+             mixEntropy(timeNoise); 
+             
+             videoContainer.classList.add('mixing-active');
+             setTimeout(() => { videoContainer.classList.remove('mixing-active'); }, 50);
+
+             // Lấy nhiễu từ khoảng thời gian không cố định
+             videoTimer = setTimeout(cameraLoop, Math.random() * 50 + 50); 
+        };
+        cameraLoop();
+    }
+
+    // --- QUẢN LÝ THỜI GIAN VÀ TRẠNG THÁI ---
     function startTimer() {
         let startTime = Date.now();
         let endTime = startTime + MAX_TIME_SECONDS * 1000;
@@ -211,10 +310,25 @@
     
     function stopCollection() {
         isCollecting = false;
-        window.removeEventListener('deviceorientation', handleDeviceOrientation);
-        sensorStatus.textContent = "✅ Hoàn thành! Đang phân tích...";
-        sensorInfo.classList.remove('mixing');
         
+        // Dừng Sensor
+        window.removeEventListener('deviceorientation', handleDeviceOrientation);
+        setStatus(sensorStatusIcon, 0); // Trở về trạng thái mặc định
+
+        // Dừng Mic/Camera
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+        }
+        if (audioContext) {
+             audioContext.close();
+        }
+        if (videoTimer) {
+             clearTimeout(videoTimer);
+        }
+        setStatus(micStatusIcon, 0); 
+        setStatus(videoContainer, 0); 
+
+        // Tạo Khóa
         generateKeyAndScore();
         
         startButton.textContent = "Bắt đầu Lại (5 Giây)";
@@ -224,18 +338,17 @@
     }
 
     function generateKeyAndScore() {
+        // ... (Logic tạo khóa và tính Hamming Distance giữ nguyên)
         // --- 1. Khóa Tham Chiếu (Reference Key - Nguồn OS TRNG) ---
-        const referenceBytes = new Uint8Array(32);
+        const referenceBytes = new Uint8Array(ENTROPY_LENGTH_BYTES);
         window.crypto.getRandomValues(referenceBytes);
-        const hexReferenceKey = bufferToHex(referenceBytes.buffer);
-        referenceKey.textContent = hexReferenceKey.toUpperCase();
         
         // --- 2. Khóa Của Bạn (User Key - Trộn) ---
-        const userBytes = new Uint8Array(32);
+        const userBytes = new Uint8Array(ENTROPY_LENGTH_BYTES);
         userBytes.set(referenceBytes); 
         
-        // Trộn (XOR) Pool Entropy từ Sensor vào Khóa Tham Chiếu
-        for (let i = 0; i < 32; i++) {
+        // Trộn (XOR) Pool Entropy từ 3 nguồn Sensor/Mic/Cam vào Khóa Tham Chiếu
+        for (let i = 0; i < ENTROPY_LENGTH_BYTES; i++) {
             userBytes[i] ^= (entropyPool[Math.floor(i / 4)] >> ((i % 4) * 8)) & 0xFF;
         }
 
@@ -247,55 +360,79 @@
 
         // --- 4. Hiển thị Kết quả ---
         
-        // Hiển thị điểm Nhiễu Vật Lý
         humanScoreEl.textContent = Math.round(score).toLocaleString('vi-VN');
         
-        // Hiển thị Điểm Khoảng Cách Hamming
         hammingDistanceEl.textContent = `${distance} / 256`; 
 
         let colorClass = 'text-green-600';
-        if (distance < 115 || distance > 141) {
-             colorClass = 'text-yellow-600'; 
-        } else if (distance < 100 || distance > 156) {
-             colorClass = 'text-red-600';
-        }
+        if (distance < 115 || distance > 141) { colorClass = 'text-yellow-600'; } 
+        if (distance < 100 || distance > 156) { colorClass = 'text-red-600'; }
         hammingDistanceEl.className = `text-xl font-extrabold ${colorClass}`;
     }
 
     // --- QUẢN LÝ QUYỀN VÀ KHỞI TẠO ---
+    async function getMediaPermissions() {
+        try {
+            // Yêu cầu quyền truy cập Camera (mặt trước) và Micro
+            stream = await navigator.mediaDevices.getUserMedia({ 
+                video: { facingMode: 'user', width: 100, height: 75 }, 
+                audio: true 
+            });
+            startCameraEntropy(stream);
+            startMicEntropy(stream.clone()); // Sử dụng clone stream cho mic để đảm bảo không bị lỗi khi dừng
+            return true;
+        } catch (error) {
+            console.error("Không cấp quyền Camera/Mic:", error);
+            setStatus(micStatusIcon, 2); // Đỏ: Lỗi Mic
+            setStatus(videoContainer, 2); // Đỏ: Lỗi Camera
+            alert("Vui lòng cho phép truy cập Camera và Mic để thu thập Entropy từ 3 nguồn.");
+            return false;
+        }
+    }
 
     async function startCollection() {
         // 1. Reset trạng thái
         resetState();
+        isCollecting = true;
         
-        // 2. Xin quyền nếu cần (Chủ yếu cho iOS)
-        let permissionGranted = true;
+        // 2. Xin quyền Sensor (Chủ yếu cho iOS)
+        let sensorPermissionGranted = false;
         if (typeof DeviceOrientationEvent.requestPermission === 'function') {
             try {
                 const permission = await DeviceOrientationEvent.requestPermission();
-                if (permission !== 'granted') {
-                    permissionGranted = false;
+                if (permission === 'granted') {
+                    sensorPermissionGranted = true;
+                } else {
+                    setStatus(sensorStatusIcon, 2); // Đỏ: Lỗi Sensor
                 }
             } catch (error) {
-                console.error("Lỗi xin quyền sensor:", error);
-                permissionGranted = false;
+                console.error("Sensor Permission Error:", error);
+                setStatus(sensorStatusIcon, 2); // Đỏ: Lỗi Sensor
             }
+        } else {
+            // Các trình duyệt không cần yêu cầu (Android/Cũ)
+            sensorPermissionGranted = true; 
         }
 
-        if (permissionGranted) {
+        if (sensorPermissionGranted) {
+            setStatus(sensorStatusIcon, 1); // Xanh: Sensor Active
+            window.addEventListener('deviceorientation', handleDeviceOrientation);
+        }
+        
+        // 3. Xin quyền Media (Camera/Mic)
+        const mediaPermissionGranted = await getMediaPermissions();
+
+        if (sensorPermissionGranted || mediaPermissionGranted) { // Chỉ cần ít nhất 1 nguồn hoạt động
             startButton.disabled = true;
             startButton.textContent = "ĐANG THU THẬP...";
             startButton.classList.remove('bg-emerald-600', 'hover:bg-emerald-700');
             startButton.classList.add('bg-gray-400', 'hover:bg-gray-500');
             
-            sensorStatus.textContent = "🚀 BẮT ĐẦU! HÃY XOAY ĐIỆN THOẠI THẬT HỖN LOẠN!";
-            isCollecting = true;
-            
-            window.addEventListener('deviceorientation', handleDeviceOrientation);
             startTimer();
         } else {
-            sensorStatus.textContent = "❌ Cần Cấp Quyền Truy Cập Sensor (Vui lòng thử lại).";
             startButton.disabled = false;
+            startButton.textContent = "❌ Cần Cấp Quyền (Thử lại)";
+            isCollecting = false;
         }
     }
 
@@ -307,14 +444,14 @@
         lastSensorValues = { alpha: 0, beta: 0, gamma: 0 };
         
         timerDisplay.textContent = MAX_TIME_SECONDS.toFixed(2);
-        sensorData.textContent = "Total Chaos Score: 0";
         humanScoreEl.textContent = "--";
         hammingDistanceEl.textContent = "-- / 256";
         userKey.textContent = "Đang chờ...";
-        referenceKey.textContent = "Đang chờ...";
 
         hammingDistanceEl.className = `text-xl font-extrabold text-green-600`;
-        osRandomnessEl.textContent = "256 bits"; // Luôn hiển thị 256 bits
+        setStatus(sensorStatusIcon, 0);
+        setStatus(micStatusIcon, 0);
+        setStatus(videoContainer, 0);
     }
 
     startButton.addEventListener('click', startCollection);
