@@ -13,3 +13,4 @@ This single-file HTML/JavaScript web application demonstrates the principle of a
 ​🛠️ Technology Stack
 ​Frontend: HTML, Tailwind CSS (via CDN)
 ​Logic: Pure JavaScript (ES6+), leveraging the built-in window.crypto API for strong random seeding and DeviceOrientationEvent for entropy collection.
+, try demo at: https://true-random.netlify.app/
